@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ice Fishing Playable</title>
+    <script src="config.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
+        }
+
+        #ad-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            transition: transform 1s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center center;
+            background-image: url('assets/background.gif');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .zoomed-in {
+            transform: scale(1.3) !important;
+        }
+
+        #game-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            max-width: calc(100vh * 9 / 16);
+            /* Keep 9:16 aspect ratio relative to height */
+        }
+
+        #logo {
+            position: absolute;
+            top: 15%;
+            right: 5%;
+            width: 28%;
+            max-width: 140px;
+            z-index: 10;
+        }
+
+        #wheel-parent {
+            position: absolute;
+            top: 52%;
+            left: 35%;
+            /* Offset to the left */
+            transform: translate(-50%, -50%);
+            width: 120%;
+            /* Relative to 9:16 game area */
+            height: auto;
+            aspect-ratio: 1 / 1;
+            z-index: 5;
+        }
+
+        #wheel-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url('assets/frame.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        #wheel {
+            position: absolute;
+            width: 87.5%;
+            height: 87.5%;
+            top: 6.2%;
+            left: 8.0%;
+            /* shifted further right to close the gap completely */
+            background-image: url('assets/circle.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            z-index: 5;
+            transition: transform 3s cubic-bezier(0.25, 1, 0.5, 1);
+            /* Initial rotation offset can be set in JS */
+        }
+
+        #girl {
+            position: absolute;
+            bottom: -5%;
+            right: -15%;
+            height: 75%;
+            max-height: 550px;
+            z-index: 8;
+            pointer-events: none;
+        }
+
+        #cta-button-container {
+            position: absolute;
+            bottom: 12%;
+            /* Closer to wheel */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        #cta-button {
+            background: linear-gradient(180deg, #4facfe, #00f2fe);
+            color: white;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            border: 3px solid rgba(255, 255, 255, 0.8);
+            border-radius: 40px;
+            color: #fff;
+            font-size: 28px;
+            font-weight: bold;
+            padding: 15px 40px;
+            text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(0, 180, 255, 0.6), inset 0 2px 5px rgba(255, 255, 255, 0.5);
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            animation: pulse 1.5s infinite;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #cta-button:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes shiny-pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(0, 242, 254, 1);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+            }
+        }
+
+        #cta-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 100%);
+            transform: skewX(-25deg);
+        }
+
+        .pulse-active::after {
+            animation: shine 2s infinite;
+        }
+
+        .pulse-active {
+            animation: shiny-pulse 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+
+            20% {
+                left: 200%;
+            }
+
+            100% {
+                left: 200%;
+            }
+        }
+
+        /* hide the old pulse */
+        @keyframes old-pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 20px rgba(255, 204, 0, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 204, 0, 0);
+            }
+        }
+
+        #popup-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 20;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #popup-content {
+            background: rgba(120, 180, 255, 0.4);
+            /* more vibrant icy blue iOS glass */
+            backdrop-filter: blur(30px) saturate(180%);
+            /* iOS liquid glass blur */
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.3);
+            border-radius: 36px;
+            /* more rounded, like iOS */
+            padding: 50px 30px;
+            text-align: center;
+            width: 85%;
+            max-width: 420px;
+            transform: scale(0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle icy shine across the popup */
+        #popup-content::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.4) 40%,
+                    rgba(255, 255, 255, 0) 50%);
+            transform: rotate(30deg);
+            pointer-events: none;
+        }
+
+        #popup-text {
+            color: #1a2a3a;
+            /* Dark text for contrast against icy background */
+            font-size: 28px;
+            font-weight: 800;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+            margin-bottom: 25px;
+            white-space: pre-wrap;
+            line-height: 1.3;
+            letter-spacing: 1px;
+        }
+
+        #popup-btn {
+            background: linear-gradient(180deg, #ffcc00, #ff8800);
+            border: 3px solid #fff;
+            border-radius: 30px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 30px;
+            text-transform: uppercase;
+            box-shadow: 0 5px 15px rgba(255, 136, 0, 0.6);
+            cursor: pointer;
+            outline: none;
+            animation: popup-btn-pulse 1.5s infinite;
+        }
+
+        @keyframes popup-btn-pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 5px 15px rgba(255, 136, 0, 0.6);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px rgba(255, 136, 0, 1);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 5px 15px rgba(255, 136, 0, 0.6);
+            }
+        }
+
+        .show-popup {
+            display: flex !important;
+        }
+
+        @keyframes popup-pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .hard-shake {
+            animation: hard-shake-anim 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+            transform: translate3d(0, 0, 0);
+        }
+
+        @keyframes hard-shake-anim {
+
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0) scale(1.1);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translate3d(-15px, 15px, 0) scale(1.1);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translate3d(15px, -15px, 0) scale(1.12);
+            }
+        }
+
+        /* Snowflake styles */
+        #snowflakes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+            /* Behind the wheel but in front of background */
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10%;
+            background: white;
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(110vh) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ad-container">
+        <div id="game-area">
+            <div id="snowflakes" aria-hidden="true"></div>
+            <img id="logo" src="assets/logo.png" alt="Ice Fishing Logo">
+
+            <div id="wheel-parent">
+                <div id="wheel"></div>
+                <div id="wheel-frame"></div>
+            </div>
+
+            <img id="girl" src="assets/girl.gif" alt="Girl Character">
+
+            <!-- Using the footer text styling found previously, combined with cta button -->
+            <div style="position: absolute; bottom: 15%; width: 100%; text-align: center; z-index: 9;">
+                <img src="img3.png" style="width: 80%; max-width: 300px; display: none;" id="footer-text-img">
+                <!-- If there was an image for "Smart players don't chase luck" -->
+                <h2 style="color: white; text-shadow: 1px 1px 3px black; font-family: sans-serif; font-size: 1.5rem; display: none;"
+                    id="footer-text">Smart players<br>don't chase luck</h2>
+            </div>
+
+            <div id="cta-button-container">
+                <button id="cta-button"></button>
+            </div>
+        </div>
+        <!-- Win Popup -->
+        <div id="popup-overlay">
+            <div id="popup-content">
+                <div id="popup-text"></div>
+                <button id="popup-btn"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Base64 Audio Placeholders -->
+    <!-- Short beep for sad -->
+    <audio id="snd-sad" preload="auto" src="assets/sad.ogg"></audio>
+    <!-- Short beep for wow -->
+    <audio id="snd-wow" preload="auto" src="assets/wow.ogg"></audio>
+    <!-- Short beep loop for bgm -->
+    <audio id="snd-bgm" preload="auto" loop src="assets/bgm.mp3"></audio>
+
+    <script>
+        // Config Init
+        document.addEventListener("DOMContentLoaded", () => {
+            const winText = window.AD_CONFIG ? window.AD_CONFIG.winText : "BIG WIN!";
+            const btnText = window.AD_CONFIG ? window.AD_CONFIG.buttonText : "PLAY";
+            const claimText = window.AD_CONFIG && window.AD_CONFIG.claimText ? window.AD_CONFIG.claimText : "ABHOLEN";
+
+            document.getElementById("cta-button").innerText = btnText;
+            document.getElementById("popup-text").innerText = winText;
+            document.getElementById("popup-btn").innerText = claimText;
+
+            // Setup wheel starting rotation
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+        });
+
+        const adContainer = document.getElementById('ad-container');
+        const wheel = document.getElementById('wheel');
+        const ctaButton = document.getElementById('cta-button');
+        const popupOverlay = document.getElementById('popup-overlay');
+        const popupContent = document.getElementById('popup-content');
+
+        const sndSad = document.getElementById('snd-sad');
+        const sndWow = document.getElementById('snd-wow');
+        const sndBgm = document.getElementById('snd-bgm');
+
+        let spinCount = 0;
+        // Let's assume the "BIG WIN" slice is at 0 degrees on the circle.png natively.
+        // We will start at an offset to make it look random.
+        let currentRotation = 15;
+        let isSpinning = false;
+
+        // Audio Context state
+        let AudioContext = window.AudioContext || window.webkitAudioContext;
+        let actx = null;
+
+        function playTick() {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.frequency.setValueAtTime(800, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, actx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.1, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.05);
+        }
+
+        function playClick() {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.frequency.setValueAtTime(400, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, actx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.1);
+        }
+
+        function playPopup() {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800, actx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1200, actx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0, actx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, actx.currentTime + 0.1);
+            gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.4);
+        }
+
+        function playBam() {
+            if (!actx) return;
+            // Create a sub-bass kick
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.frequency.setValueAtTime(150, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.5);
+            gain.gain.setValueAtTime(1, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start(actx.currentTime);
+            osc.stop(actx.currentTime + 0.5);
+
+            // Create some white noise for the 'crash' impact
+            const bufferSize = actx.sampleRate * 0.5;
+            const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const noise = actx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseFilter = actx.createBiquadFilter();
+            noiseFilter.type = 'lowpass';
+            noiseFilter.frequency.value = 1000;
+            const noiseGain = actx.createGain();
+            noiseGain.gain.setValueAtTime(1, actx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.3);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(actx.destination);
+            noise.start(actx.currentTime);
+        }
+
+        // Simulates wheel ticking that slows down
+        function simulateWheelTicks(durationMs) {
+            let elapsed = 0;
+            let currentDelay = 50;
+
+            function nextTick() {
+                if (elapsed >= durationMs) return;
+                playTick();
+
+                // Exponentially scale the delay to slow down ticks as we approach the end
+                let progress = elapsed / durationMs;
+                // Easing curve inverse mapping to delay
+                currentDelay = 50 + (progress * progress * 300);
+
+                elapsed += currentDelay;
+                setTimeout(nextTick, currentDelay);
+            }
+            nextTick();
+        }
+
+        // Angles:
+        // We calculate exact degrees for the new wheel slices as per the user's diagram arrows:
+        // Arrow 1: Empty slice on the left requires 78.75 deg CW rotation.
+        // Arrow 2: MEGA WIN slice at top-left requires 11.25 deg CW rotation.
+        const spin1Target = 1080 + 78.75; // 3 full spins + empty slice
+        const spin2Target = 2160 + 11.25; // next 3 full spins + MEGA WIN slice
+
+        ctaButton.addEventListener('click', () => {
+            if (isSpinning) return;
+
+            playClick(); // UI Sound
+
+            if (spinCount === 0) {
+                sndBgm.play().catch(e => console.log(e)); // Start BGM immediately
+            }
+
+            isSpinning = true;
+            spinCount++;
+
+            // Stop pulsing while spinning
+            ctaButton.classList.remove('pulse-active');
+
+            // Camera Zoom In
+            adContainer.classList.add('zoomed-in');
+
+            if (spinCount === 1) {
+                // Spin to Empty Field
+                currentRotation = spin1Target;
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+                // Play spin sound loop intermittently simulating wheel ticks
+                simulateWheelTicks(3000);
+
+                setTimeout(() => {
+                    // Landed on empty
+                    sndSad.play().catch(e => console.log(e));
+
+                    // Camera Zoom Out slightly (or fully)
+                    setTimeout(() => {
+                        adContainer.classList.remove('zoomed-in');
+                        // Start pulsing again
+                        ctaButton.classList.add('pulse-active');
+                        isSpinning = false;
+                    }, 1000); // Zoom out delay over 1s
+                }, 3000); // 3s spin duration
+
+            } else if (spinCount === 2) {
+                // Spin to BIG WIN
+                currentRotation = spin2Target;
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+                simulateWheelTicks(3000);
+
+                setTimeout(() => {
+                    // Landed on BIG WIN
+                    adContainer.classList.remove('zoomed-in');
+                    adContainer.classList.add('hard-shake');
+                    playBam(); // Massive impact sound
+
+                    setTimeout(() => {
+                        showWinPopup();
+                    }, 800);
+
+                }, 3000); // 3s spin duration
+            }
+        });
+
+        function showWinPopup() {
+            sndWow.play().catch(e => console.log(e));
+            playPopup(); // UI Sound
+
+            popupOverlay.classList.add('show-popup');
+            // Trigger reflow for transition
+            void popupOverlay.offsetWidth;
+            popupOverlay.style.opacity = '1';
+            popupContent.style.transform = 'scale(1)';
+        }
+
+        // Audio context initialization
+        document.body.addEventListener('touchstart', function initAudio() {
+            if (AudioContext && !actx) {
+                actx = new AudioContext();
+                const osc = actx.createOscillator();
+                osc.connect(actx.destination);
+                osc.start(0);
+                osc.stop(0.01);
+            }
+            document.body.removeEventListener('touchstart', initAudio);
+        }, { once: true });
+
+        // Also init on click for desktop testing
+        document.body.addEventListener('mousedown', function initAudioDesk() {
+            if (AudioContext && !actx) {
+                actx = new AudioContext();
+            }
+            document.body.removeEventListener('mousedown', initAudioDesk);
+        }, { once: true });
+
+        // Initialize Procedural Snowflakes
+        function initSnow() {
+            const container = document.getElementById('snowflakes');
+            if (!container) return;
+            const flakeCount = 60;
+            for (let i = 0; i < flakeCount; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                // Random properties for natural snow
+                const size = Math.random() * 5 + 2;
+                const left = Math.random() * 100;
+                const animDuration = Math.random() * 3 + 2; // 2s to 5s fall time
+                const animDelay = Math.random() * 5; // Start with different delays
+
+                flake.style.width = size + 'px';
+                flake.style.height = size + 'px';
+                flake.style.left = left + '%';
+                flake.style.animationDuration = animDuration + 's';
+                flake.style.animationDelay = '-' + animDelay + 's';
+
+                container.appendChild(flake);
+            }
+        }
+        initSnow();
+
+    </script>
+</body>
+
+</html>
