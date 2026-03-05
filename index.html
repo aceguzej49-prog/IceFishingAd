@@ -94,8 +94,8 @@
             width: 87.5%;
             height: 87.5%;
             top: 6.2%;
-            left: 8.0%;
-            /* shifted further right to close the gap completely */
+            left: 6.2%;
+            /* shifted left to close the gap as per user feedback */
             background-image: url('assets/circle.png');
             background-size: contain;
             background-repeat: no-repeat;
@@ -275,15 +275,23 @@
         }
 
         #popup-text {
-            color: #1a2a3a;
-            /* Dark text for contrast against icy background */
-            font-size: 28px;
-            font-weight: 800;
+            color: #000;
+            /* Pure black for maximum contrast */
+            font-size: 32px;
+            /* increased size slightly for better visibility */
+            font-weight: 900;
             text-transform: uppercase;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+            /* Thicker white outline */
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0    0   10px rgba(255, 255, 255, 0.8);
+            -webkit-text-stroke: 1px white;
             margin-bottom: 25px;
             white-space: pre-wrap;
-            line-height: 1.3;
+            line-height: 1.2;
             letter-spacing: 1px;
         }
 
